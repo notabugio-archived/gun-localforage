@@ -1,4 +1,4 @@
-import lmdb from 'node-lmdb'
+import localForage from 'localforage'
 
 export interface GunNode {
   _: {
@@ -15,53 +15,20 @@ export interface GunPut {
   [soul: string]: GunNode
 }
 
-const DEFAULT_CONFIG = {
-  path: 'lmdb'
-}
-
-export class GunLmdbClient {
+export class GunLocalForageClient {
   Gun: any
-  env: any
-  dbi: any
 
-  constructor(Gun: any, lmdbConfig = DEFAULT_CONFIG) {
+  constructor(Gun: any) {
     this.Gun = Gun
-    this.env = new lmdb.Env()
-    this.env.open(lmdbConfig)
-    this.dbi = this.env.openDbi({
-      name: 'gun-nodes',
-      create: true
-    })
   }
 
   async get(soul: string) {
-    if (!soul) return null
-    const txn = this.env.beginTxn()
-    try {
-      const data = this.deserialize(txn.getStringUnsafe(this.dbi, soul))
-      txn.commit()
-      return data
-    } catch (e) {
-      txn.abort()
-      throw e
-    }
-  }
-
-  async getRaw(soul: string) {
-    if (!soul) return null
-    const txn = this.env.beginTxn()
-    try {
-      const data = txn.getString(this.dbi, soul)
-      txn.commit()
-      return data || ''
-    } catch (e) {
-      txn.abort()
-      throw e
-    }
+    const result = localForage.getItem(`gun/nodes/${escape(soul)}`)
+    return result || null
   }
 
   async read(soul: string) {
-    const data = await this.get(soul)
+    const data: any = await this.get(soul)
     if (!data) return
 
     if (!this.Gun.SEA || soul.indexOf('~') === -1) return data
@@ -88,26 +55,22 @@ export class GunLmdbClient {
 
   async writeNode(soul: string, nodeData: GunNode) {
     if (!soul) return
-    const txn = this.env.beginTxn()
+    const node: any = (await this.get(soul)) || {}
     const nodeDataMeta = (nodeData && nodeData['_']) || {}
     const nodeDataState = nodeDataMeta['>'] || {}
+    const meta = (node['_'] = node['_'] || { '#': soul, '>': {} })
+    const state = (meta['>'] = meta['>'] || {})
+
+    for (let key in nodeData) {
+      if (key === '_' || !(key in nodeDataState)) continue
+      node[key] = nodeData[key]
+      state[key] = nodeDataState[key]
+    }
 
     try {
-      const existingData = txn.getStringUnsafe(this.dbi, soul)
-      const node = this.deserialize(existingData) || {}
-      const meta = (node['_'] = node['_'] || { '#': soul, '>': {} })
-      const state = (meta['>'] = meta['>'] || {})
-
-      for (let key in nodeData) {
-        if (key === '_' || !(key in nodeDataState)) continue
-        node[key] = nodeData[key]
-        state[key] = nodeDataState[key]
-      }
-
-      txn.putString(this.dbi, soul, this.serialize(node))
-      txn.commit()
+      await localForage.setItem(`gun/nodes/${escape(soul)}`, node)
     } catch (e) {
-      txn.abort()
+      console.error('Error writing to localForage', e.stack || e)
       throw e
     }
   }
@@ -117,12 +80,10 @@ export class GunLmdbClient {
     for (let soul in put) await this.writeNode(soul, put[soul])
   }
 
-  close() {
-    this.dbi.close()
-    this.env.close()
-  }
+  // tslint:disable-next-line: no-empty
+  close() {}
 }
 
-export function createClient(Gun: any, options: any) {
-  return new GunLmdbClient(Gun, options)
+export function createClient(Gun: any) {
+  return new GunLocalForageClient(Gun)
 }

@@ -1,18 +1,21 @@
 {
-  "name": "@notabug/gun-lmdb",
-  "version": "0.2.2",
-  "description": "LMDB adapter for gun and gun-receiver",
-  "keywords": [],
-  "main": "dist/@notabug/gun-lmdb.umd.js",
-  "module": "dist/@notabug/gun-lmdb.es5.js",
-  "typings": "dist/types/gun-lmdb.d.ts",
-  "files": ["dist"],
+  "name": "@notabug/gun-localforage",
+  "version": "0.1.0",
+  "description": "LocalForage adapter for gun and gun-receiver",
+  "keywords": [
+    "gundb"
+  ],
+  "main": "dist/@notabug/gun-localforage.umd.js",
+  "module": "dist/@notabug/gun-localforage.es5.js",
+  "typings": "dist/types/gun-localforage.d.ts",
+  "files": [
+    "dist"
+  ],
   "author": "go1dfish <me@go1dfish.me>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/notabugio/gun-lmdb.git"
+    "url": "https://github.com/notabugio/gun-localforage.git"
   },
-  "keywords": ["lmdb", "gundb"],
   "license": "MIT",
   "engines": {
     "node": ">=6.0.0"
@@ -34,7 +37,10 @@
     "travis-deploy-once": "travis-deploy-once"
   },
   "lint-staged": {
-    "{src,test}/**/*.ts": ["prettier --write", "git add"]
+    "{src,test}/**/*.ts": [
+      "prettier --write",
+      "git add"
+    ]
   },
   "config": {
     "commitizen": {
@@ -47,8 +53,15 @@
     },
     "testEnvironment": "node",
     "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
-    "moduleFileExtensions": ["ts", "tsx", "js"],
-    "coveragePathIgnorePatterns": ["/node_modules/", "/test/"],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/test/"
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 90,
@@ -57,14 +70,18 @@
         "statements": 95
       }
     },
-    "collectCoverageFrom": ["src/*.{js,ts}"]
+    "collectCoverageFrom": [
+      "src/*.{js,ts}"
+    ]
   },
   "prettier": {
     "semi": false,
     "singleQuote": true
   },
   "commitlint": {
-    "extends": ["@commitlint/config-conventional"]
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   },
   "devDependencies": {
     "@commitlint/cli": "^7.1.2",
@@ -103,6 +120,6 @@
     "typescript": "^3.0.3"
   },
   "dependencies": {
-    "node-lmdb": "^0.6.2"
+    "localforage": "^1.7.3"
   }
 }

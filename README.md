@@ -1,14 +1,11 @@
 # gun-lmdb
 
-LMDB adapter for gunDB based on node-lmdb
+LocalForage adapter for gunDB
 
 ## Installation
 
-    npm install @notabug/gun-lmdb
+    npm install @notabug/gun-localforage
 
 ## Usage
 
-    require("@notabug/gun-lmdb").attachToGun(Gun, {
-      path: "path/to/an/existing/folder,
-      mapSize: 1024**4 // Maximum size of database in bytes
-    });
+    require("@notabug/gun-lmdb").attachToGun(Gun);

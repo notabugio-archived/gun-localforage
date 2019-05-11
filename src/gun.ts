@@ -1,4 +1,4 @@
-import { GunLmdbClient, GunPut } from './client'
+import { GunLocalForageClient, GunPut } from './client'
 
 interface GunGet {
   '#': string
@@ -7,9 +7,9 @@ interface GunGet {
   }
 }
 
-export const attachToGun = (Gun: any, options?: any) =>
+export const attachToGun = (Gun: any) =>
   Gun.on('create', function(this: any, db: any) {
-    const lmdb = (Gun.lmdb = db.lmdb = new GunLmdbClient(Gun, options))
+    const localforage = (Gun.localforage = db.localforage = new GunLocalForageClient(Gun))
 
     db.on('get', async function(this: any, request: GunGet) {
       this.to.next(request)
@@ -19,42 +19,29 @@ export const attachToGun = (Gun: any, options?: any) =>
       const soul = get['#']
 
       try {
-        const result = await lmdb.get(soul)
-        db.on('in', {
-          '@': dedupId,
-          put: result ? { [soul]: result } : null,
-          err: null
-        })
+        const result = await localforage.get(soul)
+
+        if (result) {
+          db.on('in', {
+            '@': dedupId,
+            put: { [soul]: result },
+            err: null
+          })
+        }
       } catch (err) {
         console.error('error', err.stack || err)
-        db.on('in', {
-          '@': dedupId,
-          put: null,
-          err
-        })
       }
     })
 
     db.on('put', async function(this: any, request: GunPut) {
-      if (!request) return this.to.next(request)
-      const dedupId = request['#']
+      this.to.next(request)
+      if (!request) return
 
       try {
-        await lmdb.write(request.put)
-        db.on('in', {
-          '@': dedupId,
-          ok: true,
-          err: null
-        })
+        await localforage.write(request.put)
       } catch (err) {
-        db.on('in', {
-          '@': dedupId,
-          ok: false,
-          err: err
-        })
+        console.error('error writing', err.stack || err)
       }
-
-      this.to.next(request)
     })
 
     this.to.next(db)

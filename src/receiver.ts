@@ -1,11 +1,9 @@
-import { GunLmdbClient, GunNode } from './client'
+import { GunLocalForageClient, GunNode } from './client'
 
-export const respondToGets = (
-  Gun: any,
-  { disableRelay = true, skipValidation = true } = {},
-  lmdbOpts = undefined
-) => (db: any) => {
-  const lmdb = (Gun.lmdb = db.lmdb = new GunLmdbClient(Gun, lmdbOpts))
+export const respondToGets = (Gun: any, { disableRelay = true, skipValidation = true } = {}) => (
+  db: any
+) => {
+  const localforage = (Gun.localforage = db.localforage = new GunLocalForageClient(Gun))
 
   db.onIn(async function gunLmdbRespondToGets(msg: any) {
     const { from, json, fromCluster } = msg
@@ -16,35 +14,23 @@ export const respondToGets = (
     if (!soul || fromCluster) return msg
 
     try {
-      // const result = await lmdb.get(soul)
-      const rawResult = await lmdb.getRaw(soul)
+      // const result = await localforage.get(soul)
+      const node = (await localforage.get(soul)) || null
       let put = 'null'
-      if (rawResult) {
-        put = ['{', `${JSON.stringify(soul)}: ${rawResult}`, '}'].join('')
-      }
-      const raw: string = [
-        '{',
-        `"#": ${JSON.stringify(from.msgId())},`,
-        `"@": ${JSON.stringify(dedupId)},`,
-        `"put": ${put}`,
-        '}'
-      ].join('')
-      /*
+
       const json = {
         '#': from.msgId(),
         '@': dedupId,
-        put: result ? { [soul]: result } : null
+        put: node ? { [soul]: node } : null
       }
-      */
 
       from.send({
-        raw,
-        // json,
+        json,
         ignoreLeeching: true,
-        skipValidation: !rawResult || skipValidation
+        skipValidation: !node || skipValidation
       })
 
-      return disableRelay && rawResult ? { ...msg, noRelay: true } : msg
+      return disableRelay && node ? { ...msg, noRelay: true } : msg
     } catch (err) {
       console.error('get err', err.stack || err)
       const json = {
@@ -61,10 +47,8 @@ export const respondToGets = (
   return db
 }
 
-export const acceptWrites = (Gun: any, { disableRelay = false } = {}, lmdbOpts = undefined) => (
-  db: any
-) => {
-  const lmdb = (Gun.lmdb = db.lmdb = new GunLmdbClient(Gun, lmdbOpts))
+export const acceptWrites = (Gun: any, { disableRelay = false } = {}) => (db: any) => {
+  const localforage = (Gun.localforage = db.localforage = new GunLocalForageClient(Gun))
 
   db.onIn(async function gunLmdbAcceptWrites(msg: any) {
     if (msg.fromCluster || !msg.json.put) return msg
@@ -76,7 +60,7 @@ export const acceptWrites = (Gun: any, { disableRelay = false } = {}, lmdbOpts =
     }
 
     try {
-      await lmdb.write(diff)
+      await localforage.write(diff)
       const json = { '@': msg.json['#'], ok: true, err: null }
 
       msg.from &&
