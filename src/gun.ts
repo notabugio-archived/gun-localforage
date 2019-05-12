@@ -24,6 +24,7 @@ export const attachToGun = (Gun: any) =>
         if (result) {
           db.on('in', {
             '@': dedupId,
+            from: 'local',
             put: { [soul]: result },
             err: null
           })
