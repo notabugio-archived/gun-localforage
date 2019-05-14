@@ -20,13 +20,16 @@ export const attachToGun = (Gun: any) =>
 
       try {
         const result = await localforage.get(soul)
+        const meta = function() {} as any
+        meta.faith = true
 
         if (result) {
           db.on('in', {
             '@': dedupId,
             from: 'local',
             put: { [soul]: result },
-            err: null
+            err: null,
+            _: meta
           })
         }
       } catch (err) {
